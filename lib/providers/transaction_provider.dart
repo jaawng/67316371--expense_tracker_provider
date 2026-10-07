@@ -102,4 +102,48 @@ class TransactionProvider with ChangeNotifier {
     await _database!.delete(_tableName, where: 'id = ?', whereArgs: [id]);
     await fetchAndSetTransactions();
   }
+
+  Future<String> insert100Normal() async {
+    await _initDatabase();
+    final stopwatch = Stopwatch()..start(); // เริ่มจับเวลา
+
+    for (int i = 0; i < 100; i++) {
+      final newTx = MyTransaction(
+        title: 'ทดสอบปกติ #$i',
+        amount: 10.0,
+        date: DateTime.now(),
+        type: TransactionType.expense,
+        note: 'Insert Normal',
+      );
+      await _database!.insert(_tableName, newTx.toMap());
+    }
+
+    stopwatch.stop(); // หยุดจับเวลา
+    await fetchAndSetTransactions();
+    return 'เพิ่มปกติ 100 รายการ ใช้เวลา: ${stopwatch.elapsedMilliseconds} ms';
+  }
+
+  Future<String> insert100Batch() async {
+    await _initDatabase();
+    final stopwatch = Stopwatch()..start(); // เริ่มจับเวลา
+
+    await _database!.transaction((txn) async {
+      final batch = txn.batch();
+      for (int i = 0; i < 100; i++) {
+        final newTx = MyTransaction(
+          title: 'ทดสอบ Batch #$i',
+          amount: 20.0,
+          date: DateTime.now(),
+          type: TransactionType.income,
+          note: 'Insert Batch',
+        );
+        batch.insert(_tableName, newTx.toMap());
+      }
+      await batch.commit(noResult: true);
+    });
+
+    stopwatch.stop(); // หยุดจับเวลา
+    await fetchAndSetTransactions();
+    return 'เพิ่มแบบ Batch 100 รายการ ใช้เวลา: ${stopwatch.elapsedMilliseconds} ms';
+  }
 }

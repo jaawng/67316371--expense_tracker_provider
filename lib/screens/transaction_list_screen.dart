@@ -11,7 +11,49 @@ class TransactionListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('รายรับ-รายจ่าย')),
+      appBar: AppBar(
+        title: const Text('รายรับ-รายจ่าย'),
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.speed),
+            tooltip: 'ทดสอบความเร็ว',
+            onSelected: (value) async {
+              final provider = context.read<TransactionProvider>();
+              String resultMsg = '';
+
+              if (value == 'normal') {
+                resultMsg = await provider.insert100Normal();
+              } else if (value == 'batch') {
+                resultMsg = await provider.insert100Batch();
+              }
+
+              // แสดงแจ้งเตือนผลลัพธ์เวลาที่ใช้ (SnackBar)
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      resultMsg,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    duration: const Duration(seconds: 4),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'normal',
+                child: Text('ทดสอบเพิ่มทีละบรรทัด x100'),
+              ),
+              const PopupMenuItem(
+                value: 'batch',
+                child: Text('ทดสอบเพิ่มแบบ Batch x100'),
+              ),
+            ],
+          ),
+        ],
+      ),
       body: Consumer<TransactionProvider>(
         builder: (context, txProvider, child) {
           return Column(
