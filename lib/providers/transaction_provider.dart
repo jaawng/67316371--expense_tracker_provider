@@ -9,7 +9,10 @@ class TransactionProvider with ChangeNotifier {
   Database? _database;
   List<MyTransaction> _transactions = [];
 
+  double _totalBalance = 0.0;
+
   List<MyTransaction> get transactions => [..._transactions];
+  double get totalBalance => _totalBalance;
 
   TransactionProvider() {
     fetchAndSetTransactions();
@@ -30,7 +33,6 @@ class TransactionProvider with ChangeNotifier {
         },
         onUpgrade: (db, oldVersion, newVersion) async {
           if (oldVersion < 2) {
-            print('Upgrading database to version 2...');
             await db.execute('ALTER TABLE $_tableName ADD COLUMN note TEXT');
           }
         },
@@ -43,10 +45,25 @@ class TransactionProvider with ChangeNotifier {
   Future<void> fetchAndSetTransactions() async {
     await _initDatabase();
     if (_database == null) return;
+
     final dataList = await _database!.query(_tableName, orderBy: 'date DESC');
     _transactions = dataList
         .map((item) => MyTransaction.fromMap(item))
         .toList();
+
+    final incomeData = await _database!.rawQuery(
+      "SELECT SUM(amount) as total FROM $_tableName WHERE type = 'income'",
+    );
+    final expenseData = await _database!.rawQuery(
+      "SELECT SUM(amount) as total FROM $_tableName WHERE type = 'expense'",
+    );
+
+    double totalIncome = (incomeData.first['total'] as num?)?.toDouble() ?? 0.0;
+    double totalExpense =
+        (expenseData.first['total'] as num?)?.toDouble() ?? 0.0;
+
+    _totalBalance = totalIncome - totalExpense;
+
     notifyListeners();
   }
 
