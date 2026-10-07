@@ -22,11 +22,17 @@ class TransactionProvider with ChangeNotifier {
       final path = join(dbPath, _dbName);
       _database = await openDatabase(
         path,
-        version: 1,
+        version: 2,
         onCreate: (db, version) {
           return db.execute(
-            'CREATE TABLE $_tableName(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, amount REAL, date TEXT, type TEXT)',
+            'CREATE TABLE $_tableName(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, amount REAL, date TEXT, type TEXT, note TEXT)',
           );
+        },
+        onUpgrade: (db, oldVersion, newVersion) async {
+          if (oldVersion < 2) {
+            print('Upgrading database to version 2...');
+            await db.execute('ALTER TABLE $_tableName ADD COLUMN note TEXT');
+          }
         },
       );
     } catch (e) {
@@ -48,14 +54,16 @@ class TransactionProvider with ChangeNotifier {
     String title,
     double amount,
     DateTime date,
-    TransactionType type,
-  ) async {
+    TransactionType type, {
+    String? note,
+  }) async {
     await _initDatabase();
     final newTx = MyTransaction(
       title: title,
       amount: amount,
       date: date,
       type: type,
+      note: note,
     );
     await _database!.insert(_tableName, newTx.toMap());
     await fetchAndSetTransactions();

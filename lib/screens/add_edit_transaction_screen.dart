@@ -20,6 +20,7 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
   late double _amount;
   late DateTime _selectedDate;
   late TransactionType _type;
+  String? _note; // ตัวแปรสำหรับเก็บ Note
 
   @override
   void initState() {
@@ -28,6 +29,7 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
     _amount = widget.transaction?.amount ?? 0.0;
     _selectedDate = widget.transaction?.date ?? DateTime.now();
     _type = widget.transaction?.type ?? TransactionType.expense;
+    _note = widget.transaction?.note; // โหลดข้อมูล Note เดิม (ถ้ามี)
   }
 
   void _presentDatePicker() {
@@ -51,14 +53,23 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
     final provider = context.read<TransactionProvider>();
 
     if (widget.transaction == null) {
-      provider.addTransaction(_title, _amount, _selectedDate, _type);
+      // เพิ่มรายการใหม่ พร้อมส่ง note
+      provider.addTransaction(
+        _title,
+        _amount,
+        _selectedDate,
+        _type,
+        note: _note,
+      );
     } else {
+      // แก้ไขรายการเดิม พร้อมอัปเดต note
       final updatedTx = MyTransaction(
         id: widget.transaction!.id,
         title: _title,
         amount: _amount,
         date: _selectedDate,
         type: _type,
+        note: _note,
       );
       provider.updateTransaction(widget.transaction!.id!, updatedTx);
     }
@@ -122,6 +133,17 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
                 ],
                 onChanged: (value) => setState(() => _type = value!),
               ),
+              const SizedBox(height: 10),
+
+              // กล่องสำหรับกรอก Note ที่เพิ่มเข้ามาใหม่
+              TextFormField(
+                initialValue: _note,
+                decoration: const InputDecoration(
+                  labelText: 'บันทึกเพิ่มเติม (Note)',
+                ),
+                onSaved: (value) => _note = value,
+              ),
+
               const SizedBox(height: 30),
               ElevatedButton(
                 onPressed: _saveForm,
